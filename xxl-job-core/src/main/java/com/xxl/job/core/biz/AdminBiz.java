@@ -1,8 +1,6 @@
 package com.xxl.job.core.biz;
 
-import com.xxl.job.core.biz.model.HandleCallbackParam;
-import com.xxl.job.core.biz.model.RegistryParam;
-import com.xxl.job.core.biz.model.ReturnT;
+import com.xxl.job.core.biz.model.*;
 
 import java.util.List;
 
@@ -45,4 +43,22 @@ public interface AdminBiz {
     // ---------------------- biz (custome) ----------------------
     // group、job ... manage
 
+    /**
+     * Register current app as a new job group
+     * <p>
+     * update title if app name exist
+     *
+     * @param jobGroupParam the job group
+     * @return result
+     */
+    ReturnT<String> registerJobGroup(JobGroupParam jobGroupParam);
+
+    /**
+     * Register current app jobs
+     *
+     * @param appName the app name
+     * @param jobList jobs
+     * @return result
+     */
+    ReturnT<String> registerJobList(String appName, List<JobParam> jobList);
 }
