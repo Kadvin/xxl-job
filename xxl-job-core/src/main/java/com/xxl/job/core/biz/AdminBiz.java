@@ -61,4 +61,14 @@ public interface AdminBiz {
      * @return result
      */
     ReturnT<String> registerJobList(String appName, List<JobParam> jobList);
+
+    /**
+     * Schedule a fixed delay execution
+     *
+     * @param jobHandler the job handler
+     * @param delayedSeconds delayed seconds
+     * @param params execution params
+     * @return result
+     */
+    ReturnT<String> performLater(String jobHandler, long delayedSeconds, String params);
 }

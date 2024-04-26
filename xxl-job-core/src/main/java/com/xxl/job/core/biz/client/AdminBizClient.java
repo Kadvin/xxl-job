@@ -54,4 +54,18 @@ public class AdminBizClient implements AdminBiz {
     public ReturnT<String> registerJobList(String appName, List<JobParam> jobList) {
         return XxlJobRemotingUtil.postBody(addressUrl + "api/register_job_list/" + appName, accessToken, timeout, jobList, String.class);
     }
+
+    @Override
+    public ReturnT<String> performLater(String jobHandler, long delayedSeconds, String params) {
+        if( params != null ){
+            if( params.contains(",")){
+                return new ReturnT<>(400, "params shouldn't contains `,`");
+            }
+            if( params.contains("@")){
+                return new ReturnT<>(400, "params shouldn't contains `@`");
+            }
+        }
+        DelayedParam delayedParam = new DelayedParam(delayedSeconds, params);
+        return XxlJobRemotingUtil.postBody(addressUrl + "api/perform_later/" + jobHandler, accessToken, timeout, delayedParam, String.class);
+    }
 }

@@ -2,6 +2,7 @@ package com.xxl.job.admin.service.impl;
 
 import com.xxl.job.admin.core.thread.JobCompleteHelper;
 import com.xxl.job.admin.core.thread.JobGroupHelper;
+import com.xxl.job.admin.core.thread.JobInfoHelper;
 import com.xxl.job.admin.core.thread.JobRegistryHelper;
 import com.xxl.job.core.biz.AdminBiz;
 import com.xxl.job.core.biz.model.*;
@@ -38,6 +39,11 @@ public class AdminBizImpl implements AdminBiz {
 
     @Override
     public ReturnT<String> registerJobList(String appName, List<JobParam> jobList) {
-        return null;
+        return JobInfoHelper.getInstance().registerJobList(appName, jobList);
+    }
+
+    @Override
+    public ReturnT<String> performLater(String jobHandler, long delayedSeconds, String params) {
+        return JobInfoHelper.getInstance().performLater(jobHandler, delayedSeconds, params);
     }
 }

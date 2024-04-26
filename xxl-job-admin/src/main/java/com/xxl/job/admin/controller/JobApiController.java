@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,10 +34,13 @@ public class JobApiController {
      * @param data
      * @return
      */
-    @RequestMapping("/{uri}")
+    @RequestMapping(path = {"/{uri}", "/{uri}/{identify}"})
     @ResponseBody
     @PermissionLimit(limit = false)
-    public ReturnT<String> api(HttpServletRequest request, @PathVariable("uri") String uri, @RequestBody(required = false) String data) {
+    public ReturnT<String> api(HttpServletRequest request,
+                               @PathVariable("uri") String uri,
+                               @PathVariable(value = "identify", required = false) String identify,
+                               @RequestBody(required = false) String data) {
 
         // valid
         if (!"POST".equalsIgnoreCase(request.getMethod())) {
@@ -64,12 +68,14 @@ public class JobApiController {
         } else if ("register_job_group".equals(uri)) {
             JobGroupParam jobGroupParam = GsonTool.fromJson(data, JobGroupParam.class);
             return adminBiz.registerJobGroup(jobGroupParam);
-        } else if (uri.startsWith("register_job_list/")) {
-            String appName = uri.substring("register_job_list/".length());
-            List<JobParam> jobGroupParam = GsonTool.fromJsonList(data, JobParam.class);
-            return adminBiz.registerJobList(appName, jobGroupParam);
+        } else if (uri.equals("register_job_list")) {
+            List<JobParam> jobGroupParam = GsonTool.fromJson(data, ArrayList.class, JobParam.class);
+            return adminBiz.registerJobList(identify, jobGroupParam);
+        } else if (uri.equals("perform_later")) {
+            DelayedParam delayedParam = GsonTool.fromJson(data, DelayedParam.class);
+            return adminBiz.performLater(identify, delayedParam.getDelayedSeconds(), delayedParam.getParams());
         } else {
-            return new ReturnT<String>(ReturnT.FAIL_CODE, "invalid request, uri-mapping(" + uri + ") not found.");
+            return new ReturnT<>(ReturnT.FAIL_CODE, "invalid request, uri-mapping(" + uri + ") not found.");
         }
 
     }

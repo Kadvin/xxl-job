@@ -61,8 +61,8 @@ public class JobThread extends Thread{
 	public ReturnT<String> pushTriggerQueue(TriggerParam triggerParam) {
 		// avoid repeat
 		if (triggerLogIdSet.contains(triggerParam.getLogId())) {
-			logger.info(">>>>>>>>>>> repeate trigger job, logId:{}", triggerParam.getLogId());
-			return new ReturnT<String>(ReturnT.FAIL_CODE, "repeate trigger job, logId:" + triggerParam.getLogId());
+			logger.info(">>>>>>>>>>> repeat trigger job, logId:{}", triggerParam.getLogId());
+			return new ReturnT<String>(ReturnT.FAIL_CODE, "repeat trigger job, logId:" + triggerParam.getLogId());
 		}
 
 		triggerLogIdSet.add(triggerParam.getLogId());
@@ -110,7 +110,7 @@ public class JobThread extends Thread{
 
             TriggerParam triggerParam = null;
             try {
-				// to check toStop signal, we need cycle, so wo cannot use queue.take(), instand of poll(timeout)
+				// to check toStop signal, we need cycle, so wo cannot use queue.take(), instead of poll(timeout)
 				triggerParam = triggerQueue.poll(3L, TimeUnit.SECONDS);
 				if (triggerParam!=null) {
 					running = true;
@@ -185,7 +185,7 @@ public class JobThread extends Thread{
 				} else {
 					if (idleTimes > 30) {
 						if(triggerQueue.size() == 0) {	// avoid concurrent trigger causes jobId-lost
-							XxlJobExecutor.removeJobThread(jobId, "excutor idel times over limit.");
+							XxlJobExecutor.removeJobThread(jobId, "executor idle times over limit.");
 						}
 					}
 				}
@@ -206,7 +206,7 @@ public class JobThread extends Thread{
                 if(triggerParam != null) {
                     // callback handler info
                     if (!toStop) {
-                        // commonm
+                        // common
                         TriggerCallbackThread.pushCallBack(new HandleCallbackParam(
                         		triggerParam.getLogId(),
 								triggerParam.getLogDateTime(),
@@ -247,6 +247,6 @@ public class JobThread extends Thread{
 			logger.error(e.getMessage(), e);
 		}
 
-		logger.info(">>>>>>>>>>> xxl-job JobThread stoped, hashCode:{}", Thread.currentThread());
+		logger.info(">>>>>>>>>>> xxl-job JobThread stopped, hashCode:{}", Thread.currentThread());
 	}
 }

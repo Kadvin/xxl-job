@@ -45,5 +45,5 @@ public interface XxlJobInfoDao {
 
 	public int scheduleUpdate(XxlJobInfo xxlJobInfo);
 
-
+    XxlJobInfo findByHandler(@Param("jobHandler") String jobHandler);
 }

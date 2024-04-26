@@ -30,6 +30,12 @@ public class XxlJobScheduler  {
         // admin registry monitor run
         JobRegistryHelper.getInstance().start();
 
+        // admin job group
+        JobGroupHelper.getInstance().start();
+
+        // admin job info
+        JobInfoHelper.getInstance().start();
+
         // admin fail-monitor run
         JobFailMonitorHelper.getInstance().start();
 
@@ -59,6 +65,12 @@ public class XxlJobScheduler  {
 
         // admin fail-monitor stop
         JobFailMonitorHelper.getInstance().toStop();
+
+        // admin job info stop
+        JobInfoHelper.getInstance().toStop();
+
+        // admin job group stop
+        JobGroupHelper.getInstance().toStop();
 
         // admin registry stop
         JobRegistryHelper.getInstance().toStop();

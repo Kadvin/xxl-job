@@ -133,6 +133,7 @@ public class JobTriggerPoolHelper {
     }
 
     /**
+     * 这是异步调度触发
      * @param jobId
      * @param triggerType
      * @param failRetryCount

@@ -49,6 +49,10 @@ public class ReturnT<T> implements Serializable {
 		this.content = content;
 	}
 
+	public boolean success(){
+		return this.code == SUCCESS_CODE;
+	}
+
 	@Override
 	public String toString() {
 		return "ReturnT [code=" + code + ", msg=" + msg + ", content=" + content + "]";

@@ -139,4 +139,5 @@ public class JobParam {
     public static int length(CharSequence cs) {
         return cs == null ? 0 : cs.length();
     }
+
 }

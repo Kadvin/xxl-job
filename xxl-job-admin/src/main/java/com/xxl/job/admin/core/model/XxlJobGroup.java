@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Created by xuxueli on 16/9/30.
+ * Created by xuxueli on 16/9/30: 相当于 Project
  */
 public class XxlJobGroup {
 

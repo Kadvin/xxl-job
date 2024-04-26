@@ -2,6 +2,7 @@ package com.xxl.job.admin.core.thread;
 
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.cron.CronExpression;
+import com.xxl.job.admin.core.model.ScheduledExecution;
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.scheduler.MisfireStrategyEnum;
 import com.xxl.job.admin.core.scheduler.ScheduleTypeEnum;
@@ -29,12 +30,12 @@ public class JobScheduleHelper {
 
     public static final long PRE_READ_MS = 5000;    // pre read
 
-    private Thread scheduleThread;
-    private Thread ringThread;
+    private Thread scheduleThread; // 可分布式从数据库中读取任务，并加以调度的线程(如果过时间就按策略或直接调度，否则让ringThread打拍子调度)
+    private Thread ringThread; // 在秒级别上对其，执行调度的线程，每次调度的触发都是异步的
     private volatile boolean scheduleThreadToStop = false;
     private volatile boolean ringThreadToStop = false;
-    private volatile static Map<Integer, List<Integer>> ringData = new ConcurrentHashMap<>();
-
+    private static final Map<Integer, List<Integer>> ringData = new ConcurrentHashMap<>(); // seconds -> [jobId1, jobId2, ...]
+    private static final Map<Integer, String> bridgeExecutorParams = new ConcurrentHashMap<>();// jobId -> executorParams
     public void start(){
 
         // schedule thread
@@ -51,7 +52,7 @@ public class JobScheduleHelper {
                 }
                 logger.info(">>>>>>>>> init xxl-job admin scheduler success.");
 
-                // pre-read count: treadpool-size * trigger-qps (each trigger cost 50ms, qps = 1000/50 = 20)
+                // pre-read count: thread-pool-size * trigger-qps (each trigger cost 50ms, qps = 1000/50 = 20) ： 根据线程池大小和单个任务调度需要的时长，计算在一个周期内可以处理的job个数
                 int preReadCount = (XxlJobAdminConfig.getAdminConfig().getTriggerPoolFastMax() + XxlJobAdminConfig.getAdminConfig().getTriggerPoolSlowMax()) * 20;
 
                 while (!scheduleThreadToStop) {
@@ -63,47 +64,56 @@ public class JobScheduleHelper {
                     Boolean connAutoCommit = null;
                     PreparedStatement preparedStatement = null;
 
-                    boolean preReadSuc = true;
+                    boolean preReadSuc = true;// 指示本循环完毕后，是歇1s继续循环拿任务，还是歇5s，跳过5s周期
                     try {
 
                         conn = XxlJobAdminConfig.getAdminConfig().getDataSource().getConnection();
                         connAutoCommit = conn.getAutoCommit();
                         conn.setAutoCommit(false);
-
+                        // 通过这个锁的机制，支持了多个 admin 程序的cluster (每个实例负责从数据库中拿出5秒内需要执行的 jobInfo进行调度)
                         preparedStatement = conn.prepareStatement(  "select * from xxl_job_lock where lock_name = 'schedule_lock' for update" );
                         preparedStatement.execute();
 
                         // tx start
 
                         // 1、pre read
-                        long nowTime = System.currentTimeMillis();
+                        long nowTime = System.currentTimeMillis(); // 只读5s内需要执行的任务 trigger_next_time <= nowTime + PRE_READ_MS
+                        //
+                        //    ------------------------5s---------now---------5s-----------------------
+                        //             2.1 misfire     |  2.2     |   2.3    |  should not been loaded
+                        //                                     current
+                        //  原设计者有一个规则定义/约定：
+                        //  1. 一个任务被规划于某个时间调度，过了这个时间点5s，其还没有被调度，则认为其 misfire，misfire之后，按相关任务的策略执行(do nothing or fire once now)
+                        //  2. 过了这个时间点，但还没有超过5s，就当作调度偏差其，会被正常调度
                         List<XxlJobInfo> scheduleList = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().scheduleJobQuery(nowTime + PRE_READ_MS, preReadCount);
                         if (scheduleList!=null && scheduleList.size()>0) {
                             // 2、push time-ring
                             for (XxlJobInfo jobInfo: scheduleList) {
-
+                                String executorParam = jobInfo.nextExecutorParam();
+                                if( executorParam != null )
+                                    bridgeExecutorParams.put(jobInfo.getId(), executorParam);
                                 // time-ring jump
-                                if (nowTime > jobInfo.getTriggerNextTime() + PRE_READ_MS) {
-                                    // 2.1、trigger-expire > 5s：pass && make next-trigger-time
-                                    logger.warn(">>>>>>>>>>> xxl-job, schedule misfire, jobId = " + jobInfo.getId());
+                                if (jobInfo.getTriggerNextTime() < nowTime - PRE_READ_MS) {
+                                    // 2.1、trigger-expire > 5s：pass && make next-trigger-time：
+                                    logger.warn(">>>>>>>>>>> xxl-job, schedule misfire, jobId = {}", jobInfo.getId());
 
                                     // 1、misfire match
                                     MisfireStrategyEnum misfireStrategyEnum = MisfireStrategyEnum.match(jobInfo.getMisfireStrategy(), MisfireStrategyEnum.DO_NOTHING);
                                     if (MisfireStrategyEnum.FIRE_ONCE_NOW == misfireStrategyEnum) {
                                         // FIRE_ONCE_NOW 》 trigger
-                                        JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.MISFIRE, -1, null, null, null);
-                                        logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = " + jobInfo.getId() );
+                                        JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.MISFIRE, -1, null, executorParam, null);
+                                        logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = {}", jobInfo.getId() );
                                     }
 
                                     // 2、fresh next
                                     refreshNextValidTime(jobInfo, new Date());
 
-                                } else if (nowTime > jobInfo.getTriggerNextTime()) {
+                                } else if (jobInfo.getTriggerNextTime() < nowTime) {
                                     // 2.2、trigger-expire < 5s：direct-trigger && make next-trigger-time
 
                                     // 1、trigger
-                                    JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.CRON, -1, null, null, null);
-                                    logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = " + jobInfo.getId() );
+                                    JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.CRON, -1, null, executorParam, null);
+                                    logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = {}", jobInfo.getId() );
 
                                     // 2、fresh next
                                     refreshNextValidTime(jobInfo, new Date());
@@ -152,7 +162,7 @@ public class JobScheduleHelper {
 
                     } catch (Exception e) {
                         if (!scheduleThreadToStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, JobScheduleHelper#scheduleThread error:{}", e);
+                            logger.error(">>>>>>>>>>> xxl-job, JobScheduleHelper#scheduleThread error", e);
                         }
                     } finally {
 
@@ -245,19 +255,20 @@ public class JobScheduleHelper {
                         }
 
                         // ring trigger
-                        logger.debug(">>>>>>>>>>> xxl-job, time-ring beat : " + nowSecond + " = " + Arrays.asList(ringItemData) );
+                        logger.trace(">>>>>>>>>>> xxl-job, time-ring beat : " + nowSecond + " = " + ringItemData );
                         if (ringItemData.size() > 0) {
                             // do trigger
                             for (int jobId: ringItemData) {
+                                String executorParam = bridgeExecutorParams.remove(jobId); // 从 schedule 线程设置好，桥接过来的任务参数，主要是为fix delay
                                 // do trigger
-                                JobTriggerPoolHelper.trigger(jobId, TriggerTypeEnum.CRON, -1, null, null, null);
+                                JobTriggerPoolHelper.trigger(jobId, TriggerTypeEnum.CRON, -1, null, executorParam, null);
                             }
                             // clear
                             ringItemData.clear();
                         }
                     } catch (Exception e) {
                         if (!ringThreadToStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, JobScheduleHelper#ringThread error:{}", e);
+                            logger.error(">>>>>>>>>>> xxl-job, JobScheduleHelper#ringThread error", e);
                         }
                     }
                 }
@@ -271,6 +282,9 @@ public class JobScheduleHelper {
 
     private void refreshNextValidTime(XxlJobInfo jobInfo, Date fromTime) throws Exception {
         Date nextValidTime = generateNextValidTime(jobInfo, fromTime);
+        if(jobInfo.isFixedDelay()){
+            jobInfo.removeExpiredExecutions(fromTime);
+        }
         if (nextValidTime != null) {
             jobInfo.setTriggerLastTime(jobInfo.getTriggerNextTime());
             jobInfo.setTriggerNextTime(nextValidTime.getTime());
@@ -292,7 +306,7 @@ public class JobScheduleHelper {
         }
         ringItemData.add(jobId);
 
-        logger.debug(">>>>>>>>>>> xxl-job, schedule push time-ring : " + ringSecond + " = " + Arrays.asList(ringItemData) );
+        logger.debug(">>>>>>>>>>> xxl-job, schedule push time-ring : " + ringSecond + " = " + ringItemData );
     }
 
     public void toStop(){
@@ -362,6 +376,11 @@ public class JobScheduleHelper {
             return nextValidTime;
         } else if (ScheduleTypeEnum.FIX_RATE == scheduleTypeEnum /*|| ScheduleTypeEnum.FIX_DELAY == scheduleTypeEnum*/) {
             return new Date(fromTime.getTime() + Integer.valueOf(jobInfo.getScheduleConf())*1000 );
+        } else if (ScheduleTypeEnum.FIX_DELAY == scheduleTypeEnum) {
+            List<ScheduledExecution> scheduledExecutions = jobInfo.getScheduledExecutions();
+            ScheduledExecution execution = scheduledExecutions.stream().filter(e -> e.getSystemTimeSeconds() * 1000L > fromTime.getTime()).findFirst().orElse(null);
+            if( execution != null) return execution.toDate();
+            else return null;
         }
         return null;
     }

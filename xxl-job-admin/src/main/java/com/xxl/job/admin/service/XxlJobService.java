@@ -1,16 +1,19 @@
 package com.xxl.job.admin.service;
 
 
+import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobInfo;
 import com.xxl.job.admin.core.model.XxlJobUser;
+import com.xxl.job.core.biz.model.JobParam;
 import com.xxl.job.core.biz.model.ReturnT;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
  * core job action for xxl-job
- * 
+ *
  * @author xuxueli 2016-5-28 15:30:33
  */
 public interface XxlJobService {
@@ -80,6 +83,14 @@ public interface XxlJobService {
 	public ReturnT<String> trigger(XxlJobUser loginUser, int jobId, String executorParam, String addressList);
 
 	/**
+	 * Register a batch of jobs for the app group
+     *
+	 * @param jobGroup the job group
+	 * @param jobList the jobs(including repeating and delayed job info)
+	 */
+	void registerJobList(XxlJobGroup jobGroup, List<JobParam> jobList);
+
+	/**
 	 * dashboard info
 	 *
 	 * @return
@@ -95,4 +106,14 @@ public interface XxlJobService {
 	 */
 	public ReturnT<Map<String,Object>> chartInfo(Date startDate, Date endDate);
 
+	/**
+	 * Schedule a fixed delay execution
+	 *
+	 * @param jobInfo the job info
+	 * @param delayedSeconds delayed seconds
+	 * @param params execution params
+	 * @return result
+	 */
+
+	ReturnT<String> performLater(XxlJobInfo jobInfo, long delayedSeconds, String params);
 }

@@ -231,10 +231,18 @@
 	<update id="scheduleUpdate" parameterType="com.xxl.job.admin.core.model.XxlJobInfo"  >
 		UPDATE xxl_job_info
 		SET
+			schedule_conf = #{scheduleConf},
 			trigger_last_time = #{triggerLastTime},
 			trigger_next_time = #{triggerNextTime},
 			trigger_status = #{triggerStatus}
 		WHERE id = #{id}
 	</update>
+
+	<select id="findByHandler" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM xxl_job_info AS t
+		WHERE t.glue_type = 'BEAN'
+		and t.executor_handler <![CDATA[ <= ]]> #{jobHandler}
+	</select>
 
 </mapper>
