@@ -292,8 +292,13 @@ public class JobScheduleHelper {
             jobInfo.setTriggerStatus(0);
             jobInfo.setTriggerLastTime(0);
             jobInfo.setTriggerNextTime(0);
-            logger.warn(">>>>>>>>>>> xxl-job, refreshNextValidTime fail for job: jobId={}, scheduleType={}, scheduleConf={}",
-                    jobInfo.getId(), jobInfo.getScheduleType(), jobInfo.getScheduleConf());
+            if(jobInfo.isFixedDelay()) {
+                logger.debug(">>>>>>>>>>> xxl-job, jobId={}, executorHandler={}, no scheduled executions in future", jobInfo.getId(), jobInfo.getExecutorHandler());
+            }else{
+                logger.warn(">>>>>>>>>>> xxl-job, refreshNextValidTime fail for job: jobId={}, scheduleType={}, scheduleConf={}",
+                        jobInfo.getId(), jobInfo.getScheduleType(), jobInfo.getScheduleConf());
+
+            }
         }
     }
 
