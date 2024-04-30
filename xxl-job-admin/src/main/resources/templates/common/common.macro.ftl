@@ -65,7 +65,7 @@
 </#macro>
 
 <#macro commonHeader>
-	<header class="main-header">
+	<header class="main-header"  <#if RequestParameters['integration']?exists && (RequestParameters['integration'] == "true")>style="display: none"</#if> >
 		<a href="${request.contextPath}/" class="logo">
 			<span class="logo-mini"><b>XXL</b></span>
 			<span class="logo-lg"><b>${I18n.admin_name}</b></span>
@@ -128,7 +128,7 @@
 
 <#macro commonLeft pageName >
 	<!-- Left side column. contains the logo and sidebar -->
-	<aside class="main-sidebar">
+	<aside class="main-sidebar"  <#if RequestParameters['integration']?exists && (RequestParameters['integration'] == "true")>style="display: none"</#if> >
 		<!-- sidebar: style can be found in sidebar.less -->
 		<section class="sidebar">
 			<!-- sidebar menu: : style can be found in sidebar.less -->
@@ -226,7 +226,7 @@
 </#macro>
 
 <#macro commonFooter >
-	<footer class="main-footer">
+	<footer class="main-footer"  <#if RequestParameters['integration']?exists && (RequestParameters['integration'] == "true")>style="margin-left: 0"</#if>>
         Powered by <b>XXL-JOB</b> ${I18n.admin_version}
 		<div class="pull-right hidden-xs">
             <strong>Copyright &copy; 2015-${.now?string('yyyy')} &nbsp;
