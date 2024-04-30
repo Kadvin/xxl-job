@@ -139,7 +139,7 @@
 						<version>${maven-release-plungin.version}</version>
 						<configuration>
 							<autoVersionSubmodules>true</autoVersionSubmodules>
-							<tagNameFormat>${project.artifactId}-@{project.version}</tagNameFormat>
+							<tagNameFormat>@{project.version}</tagNameFormat>
 							<mavenExecutorId>forked-path</mavenExecutorId>
 							<useReleaseProfile>true</useReleaseProfile>
 							<releaseProfiles>releases</releaseProfiles>
