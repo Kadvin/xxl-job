@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.xuxueli</groupId>
 	<artifactId>xxl-job</artifactId>
-	<version>3.0.2</version>
+	<version>3.0.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>${project.artifactId}</name>
@@ -58,7 +58,7 @@
 	</licenses>
 
 	<scm>
-		<tag>xxl-job-3.0.2</tag>
+		<tag>HEAD</tag>
 		<url>https://github.com/Kadvin/xxl-job.git</url>
 		<connection>scm:git:https://github.com/Kadvin/xxl-job.git</connection>
 		<developerConnection>scm:git:git@github.com:Kadvin/xxl-job.git</developerConnection>
