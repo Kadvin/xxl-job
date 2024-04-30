@@ -42,6 +42,7 @@
 		<maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 		<maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
 		<maven-gpg-plugin.version>3.2.3</maven-gpg-plugin.version>
+		<maven-release-plungin.version>2.5.3</maven-release-plungin.version>
 	</properties>
 
 	<build>
@@ -58,10 +59,10 @@
 	</licenses>
 
 	<scm>
-		<tag>master</tag>
-		<url>https://github.com/xuxueli/xxl-job.git</url>
-		<connection>scm:git:https://github.com/xuxueli/xxl-job.git</connection>
-		<developerConnection>scm:git:git@github.com:xuxueli/xxl-job.git</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/Kadvin/xxl-job.git</url>
+		<connection>scm:git:https://github.com/Kadvin/xxl-job.git</connection>
+		<developerConnection>scm:git:git@github.com:Kadvin/xxl-job.git</developerConnection>
 	</scm>
 	<developers>
 		<developer>
@@ -69,6 +70,12 @@
 			<name>xuxueli</name>
 			<email>931591021@qq.com</email>
 			<url>https://github.com/xuxueli</url>
+		</developer>
+		<developer>
+			<id>Kadvin</id>
+			<name>Kadvin</name>
+			<email>kadvin@gmail.com</email>
+			<url>https://github.com/Kadvin</url>
 		</developer>
 	</developers>
 
@@ -126,6 +133,19 @@
                             </execution>
                         </executions>
                     </plugin>
+					<!-- Release-->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-release-plugin</artifactId>
+						<version>${maven-release-plungin.version}</version>
+						<configuration>
+							<autoVersionSubmodules>true</autoVersionSubmodules>
+							<tagNameFormat>${project.artifactId}-@{project.version}</tagNameFormat>
+							<mavenExecutorId>forked-path</mavenExecutorId>
+							<useReleaseProfile>true</useReleaseProfile>
+							<releaseProfiles>releases</releaseProfiles>
+						</configuration>
+					</plugin>
 				</plugins>
 			</build>
 			<distributionManagement>
