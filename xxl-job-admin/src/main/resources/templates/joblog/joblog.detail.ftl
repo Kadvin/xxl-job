@@ -43,7 +43,7 @@
         </nav>
     </header>
 
-    <div class="content-wrapper" >
+    <div class="content-wrapper" <#if RequestParameters['integration']?exists && (RequestParameters['integration'] == "true")>style="margin-left: 0"</#if>>
         <section class="content">
             <pre style="font-size:12px;position:relative;" >
                 <div id="logConsole"></div>

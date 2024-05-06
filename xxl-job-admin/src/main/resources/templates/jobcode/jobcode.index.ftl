@@ -86,7 +86,7 @@
             </nav>
         </header>
 
-		<div class="content-wrapper" id="ideWindow" ></div>
+		<div class="content-wrapper" id="ideWindow" <#if RequestParameters['integration']?exists && (RequestParameters['integration'] == "true")>style="margin-left: 0"</#if>></div>
 
 		<!-- footer -->
 		<#--<@netCommon.commonFooter />-->

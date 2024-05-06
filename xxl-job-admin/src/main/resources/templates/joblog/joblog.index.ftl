@@ -17,7 +17,7 @@
 	<@netCommon.commonLeft "joblog" />
 	
 	<!-- Content Wrapper. Contains page content -->
-	<div class="content-wrapper">
+	<div class="content-wrapper" <#if RequestParameters['integration']?exists && (RequestParameters['integration'] == "true")>style="margin-left: 0"</#if>>
 		<!-- Content Header (Page header) -->
 		<section class="content-header">
 			<h1>${I18n.joblog_name}</h1>
